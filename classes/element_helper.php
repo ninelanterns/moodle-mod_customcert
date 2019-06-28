@@ -65,7 +65,7 @@ class element_helper {
      */
     public static function render_content($pdf, $element, $content) {
         list($font, $attr) = self::get_font($element);
-        $pdf->setFont($font, $attr, $element->get_fontsize());
+        $pdf->setFont($font, $attr, $element->get_fontsize(), '', false);
         $fontcolour = \TCPDF_COLORS::convertHTMLColorToDec($element->get_colour(), $fontcolour);
         $pdf->SetTextColor($fontcolour['R'], $fontcolour['G'], $fontcolour['B']);
 
