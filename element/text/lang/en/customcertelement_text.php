@@ -26,3 +26,11 @@ $string['pluginname'] = 'Text';
 $string['privacy:metadata'] = 'The Text plugin does not store any personal data.';
 $string['text'] = 'Text';
 $string['text_help'] = 'This is the text that will display on the PDF.';
+$string['text_placeholder'] = 'Text and placeholder';
+$string['text_placeholder_help'] = 'This is the text that will display on the PDF. You can use placeholders for dynamically replace course or user information: <br/>
+<ol>
+    <li><strong>Course fields</strong>: course information is prefixed with <i>course_</i> for normal field (e.g. @{course_idnumber}) or <i>course_customfield_{shortname}</i> for custom fields (e.g. @{course_customfield_duration})</li>
+    <li><strong>User fields</strong>: user information is prefixed with <i>user_</i> for normal fields (e.g. {@user_idnumber}) or <i>user_profile_field_{shortname}</i> for custom fields (e.g. @{user_profile_field_businessunit})</li>
+</ol>
+Note that if a field is missing, the whole text element will not display altogether.
+';

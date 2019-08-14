@@ -43,7 +43,7 @@ class element extends \mod_customcert\element {
     public function render_form_elements($mform) {
         $mform->addElement('textarea', 'text', get_string('text', 'customcertelement_text'));
         $mform->setType('text', PARAM_RAW);
-        $mform->addHelpButton('text', 'text', 'customcertelement_text');
+        $mform->addHelpButton('text', 'text_placeholder', 'customcertelement_text');
 
         parent::render_form_elements($mform);
     }
@@ -67,7 +67,7 @@ class element extends \mod_customcert\element {
      * @param \stdClass $user the user we are rendering this for
      */
     public function render($pdf, $preview, $user) {
-        \mod_customcert\element_helper::render_content($pdf, $this, $this->get_text());
+        \mod_customcert\element_helper::render_content($pdf, $this, $this->get_text($user->id));
     }
 
     /**
@@ -100,8 +100,58 @@ class element extends \mod_customcert\element {
      *
      * @return string
      */
-    protected function get_text() {
+    protected function get_text($user_id=0) {
+        if (!$user_id) {
+            global $USER;
+            $user_id = $USER->id;
+        }
+        $course_id = \mod_customcert\element_helper::get_courseid($this->get_id());
         $context = \mod_customcert\element_helper::get_context($this->get_id());
-        return format_text($this->get_data(), FORMAT_HTML, ['context' => $context]);
+        $data = $this->replace_placeholder($this->get_data(), $course_id, $user_id);
+        return format_text($data, FORMAT_HTML, ['context' => $context]);
+    }
+
+    protected function replace_placeholder($text, $course_id, $user_id) {
+        $matches = array();
+        if (!preg_match_all('/@{([^}]+)}/', $text, $matches)) {
+            return $text;
+        }
+
+        $replaced = $this->get_all_fields($course_id, $user_id);
+        foreach ($matches[1] as $field) {
+            if (empty($replaced[$field])) {
+                return '';
+            }
+        }
+        $replacevalues = $this->encapsulate_placeholder($replaced);
+        return str_replace(array_keys($replacevalues), array_values($replacevalues), $text);
+    }
+
+    protected function get_all_fields($course_id, $user_id) {
+        $object = new \stdClass();
+
+        $course = get_course($course_id);
+        customfield_load_data($course, 'course', 'course');
+        $this->merge_with_prefix($object, $course, 'course');
+
+        $user = \core_user::get_user($user_id);
+        profile_load_data($user);
+        $this->merge_with_prefix($object, $user, 'user');
+
+        return (array)$object;
+    }
+
+    protected function merge_with_prefix($source, $object, $prefix) {
+        foreach ($object as $field => $value) {
+            $source->{$prefix.'_'.$field} = $value;
+        }
+    }
+
+    protected function encapsulate_placeholder($replaced) {
+        $replacevalues = array();
+        foreach ($replaced as $field => $value) {
+            $replacevalues['@{'.$field.'}'] = $value;
+        }
+        return $replacevalues;
     }
 }
