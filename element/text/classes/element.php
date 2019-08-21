@@ -128,10 +128,15 @@ class element extends \mod_customcert\element {
     }
 
     protected function get_all_fields($course_id, $user_id) {
+        global $DB;
         $object = new \stdClass();
 
         $course = get_course($course_id);
         customfield_load_data($course, 'course', 'course');
+        $durationfields = $DB->get_fieldset_select('course_info_field', 'shortname', 'datatype=:datatype', array('datatype' => 'duration'));
+        foreach ($durationfields as $field) {
+            $course->{"customfield_$field"} = self::translate_duration($course->{"customfield_$field"});
+        }
         $this->merge_with_prefix($object, $course, 'course');
 
         $user = \core_user::get_user($user_id);
@@ -153,5 +158,55 @@ class element extends \mod_customcert\element {
             $replacevalues['@{'.$field.'}'] = $value;
         }
         return $replacevalues;
+    }
+
+    private static function translate_duration($seconds, $short = false) {
+        $out = '';
+
+        if ($short) {
+            $out = intval($seconds) . ' '  . (intval($seconds) > 1 ? 'seconds' : 'second') . ' ';
+            if ((intval($seconds) % MINSECS) == 0) {
+                $minutes = (intval($seconds) / MINSECS);
+                $out = $minutes . ' '  . ($minutes > 1 ? 'minutes' : 'minute') . ' ';
+                if ((intval($seconds) % HOURSECS) == 0) {
+                    $hours = (intval($seconds) / HOURSECS);
+                    $out = $hours . ' ' . ($hours > 1 ? 'hours' : 'hour') . ' ';
+                    if ((intval($seconds) % DAYSECS) == 0) {
+                        $days = (intval($seconds) / DAYSECS);
+                        $out = $days . ' ' . ($days > 1 ? 'days' : 'day') . ' ';
+                        if ((intval($seconds) % WEEKSECS) == 0) {
+                            $weeks = (intval($seconds) / WEEKSECS);
+                            $out = $weeks . ' ' . ($weeks > 1 ? 'weeks' : 'week') . ' ';
+                        }
+                    }
+                }
+            }
+            return $out;
+        }
+        /* days */
+        $days = intval(intval($seconds) / (HOURSECS*24));
+        if($days > 0){
+            $out .= $days . ' ' . ($days > 1 ? 'days' : 'day') . ' ';
+        }
+
+        /* hours */
+        $hours = (intval($seconds) / HOURSECS) % 24;
+        if($hours > 0){
+            $out .= $hours . ' ' . ($hours > 1 ? 'hours' : 'hour') . ' ';
+        }
+
+        /* minutes */
+        $minutes = (intval($seconds) / MINSECS) % 60;
+        if($minutes > 0){
+            $out .= $minutes . ' '  . ($minutes > 1 ? 'minutes' : 'minute') . ' ';
+        }
+
+        /* seconds */
+        $sec = intval($seconds) % MINSECS;
+        if ($sec > 0){
+            $out .= $sec . ' '  . ($sec > 1 ? 'seconds' : 'second') . ' ';
+        }
+
+        return $out;
     }
 }
