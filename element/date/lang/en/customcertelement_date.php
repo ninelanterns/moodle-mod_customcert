@@ -37,3 +37,4 @@ $string['numbersuffix_nd_as_in_second'] = 'nd';
 $string['numbersuffix_rd_as_in_third'] = 'rd';
 $string['numbersuffix_st_as_in_first'] = 'st';
 $string['userdateformat'] = 'User date format';
+$string['seminarenddate'] = 'Seminar end date';
