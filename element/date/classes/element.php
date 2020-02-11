@@ -51,6 +51,11 @@ define('CUSTOMCERT_DATE_COURSE_START', '-3');
  */
 define('CUSTOMCERT_DATE_COURSE_END', '-4');
 
+/**
+ * Date - Seminar end
+ */
+define('CUSTOMCERT_DATE_SEMINAR_END', '-5');
+
 require_once($CFG->dirroot . '/lib/grade/constants.php');
 
 /**
@@ -77,6 +82,7 @@ class element extends \mod_customcert\element {
         $dateoptions[CUSTOMCERT_DATE_COURSE_START] = get_string('coursestartdate', 'customcertelement_date');
         $dateoptions[CUSTOMCERT_DATE_COURSE_END] = get_string('courseenddate', 'customcertelement_date');
         $dateoptions[CUSTOMCERT_DATE_COURSE_GRADE] = get_string('coursegradedate', 'customcertelement_date');
+        $dateoptions[CUSTOMCERT_DATE_SEMINAR_END] = get_string('seminarenddate', 'customcertelement_date');
         $dateoptions = $dateoptions + \mod_customcert\element_helper::get_grade_items($COURSE);
 
         $mform->addElement('select', 'dateitem', get_string('dateitem', 'customcertelement_date'), $dateoptions);
@@ -158,6 +164,35 @@ class element extends \mod_customcert\element {
                 $date = $DB->get_field('course', 'startdate', array('id' => $courseid));
             } else if ($dateitem == CUSTOMCERT_DATE_COURSE_END) {
                 $date = $DB->get_field('course', 'enddate', array('id' => $courseid));
+            } else if ($dateitem == CUSTOMCERT_DATE_SEMINAR_END) { //ICAHAS-160
+                $sql = "SELECT dates.timestart AS timestart,
+                               dates.timefinish AS timefinish,
+                               session.id AS sessionid
+                          FROM {facetoface} seminar
+                          JOIN {facetoface_sessions} session
+                            ON seminar.id = session.facetoface
+                          JOIN {facetoface_signups} signup
+                            ON signup.sessionid = session.id
+                          JOIN {facetoface_signups_status} status
+                            ON status.signupid = signup.id
+                          JOIN {facetoface_sessions_dates} dates
+                            ON dates.sessionid = session.id
+                         WHERE seminar.course = :courseid
+                           AND signup.userid = :userid
+                           AND status.statuscode = :fullyattendedstatus
+                      ORDER BY dates.timefinish DESC
+                               LIMIT 1";
+                $result = $DB->get_record_sql($sql, array('courseid' => $courseid, 'userid' => $user->id, 'fullyattendedstatus' => MDL_F2F_STATUS_FULLY_ATTENDED));
+                if (!empty($result)) {
+                    if (userdate($result->timestart, '%y%m%d') === userdate($result->timefinish, '%y%m%d')) {
+                        $date = $result->timefinish;
+                    } else {
+                        $multiday = true;
+                        $date = $this->get_date_format_string($result->timestart, $dateformat) . ' - ' . $this->get_date_format_string($result->timefinish, $dateformat);
+                    }
+                } else {
+                    $date = 0;
+                }
             } else {
                 if ($dateitem == CUSTOMCERT_DATE_COURSE_GRADE) {
                     $grade = \mod_customcert\element_helper::get_course_grade_info(
@@ -189,7 +224,11 @@ class element extends \mod_customcert\element {
 
         // Ensure that a date has been set.
         if (!empty($date)) {
-            \mod_customcert\element_helper::render_content($pdf, $this, $this->get_date_format_string($date, $dateformat));
+            if (!empty($multiday)) {
+                \mod_customcert\element_helper::render_content($pdf, $this, $date);
+            } else {
+                \mod_customcert\element_helper::render_content($pdf, $this, $this->get_date_format_string($date, $dateformat));
+            }
         }
     }
 
