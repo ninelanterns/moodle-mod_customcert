@@ -431,7 +431,12 @@ class certificate {
         $issue = new \stdClass();
         $issue->userid = $userid;
         $issue->customcertid = $certificateid;
-        $issue->code = self::generate_code();
+        if (get_config('customcert', 'sequential_code')) {
+            $issue->code = self::generate_sequential_code($userid, $certificateid);
+        } else {
+            $issue->code = self::generate_code();
+        }
+        
         $issue->emailed = 0;
         $issue->timecreated = time();
 
@@ -457,6 +462,27 @@ class certificate {
             }
         }
 
+        return $code;
+    }
+    
+    public static function generate_sequential_code($userid, $certid) {
+        global $DB;
+        
+        $sequence = new \stdClass();
+        $sequence->user_id = $userid;
+        $sequence->cert_id = $certid;
+        $sequence->timecreated = time();
+
+        $sequence->id = $DB->insert_record('customcert_sequential_code', $sequence);
+        
+        $start = get_config('customcert', 'sequence_start');
+        
+        if (empty($start)) {
+            $start = 0;
+        }
+        
+        $code = $start + ($sequence->id - 1);
+        
         return $code;
     }
 }

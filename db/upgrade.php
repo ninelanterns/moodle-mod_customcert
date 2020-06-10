@@ -145,6 +145,30 @@ function xmldb_customcert_upgrade($oldversion) {
         // Savepoint reached.
         upgrade_mod_savepoint(true, 2018051705, 'customcert');
     }
+    
+    if ($oldversion < 2018051708) {
+
+        // Define table customcert_sequential_code to be created.
+        $table = new xmldb_table('customcert_sequential_code');
+
+        // Adding fields to table customcert_sequential_code.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('user_id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('cert_id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table customcert_sequential_code.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+
+        // Conditionally launch create table for customcert_sequential_code.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Customcert savepoint reached.
+        upgrade_mod_savepoint(true, 2018051708, 'customcert');
+    }
+
 
     return true;
 }

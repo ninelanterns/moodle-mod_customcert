@@ -44,9 +44,17 @@ class element extends \mod_customcert\element {
      */
     public function render($pdf, $preview, $user) {
         global $DB;
-
+        
         if ($preview) {
-            $code = \mod_customcert\certificate::generate_code();
+            if (get_config('customcert', 'sequential_code')) {
+                $code = get_config('customcert', 'sequence_start');
+                if (empty($code)) {
+                    $code = '[Unconfigured Sequence]';
+                }
+            } else {
+                $code = \mod_customcert\certificate::generate_code();
+            }
+            
         } else {
             // Get the page.
             $page = $DB->get_record('customcert_pages', array('id' => $this->get_pageid()), '*', MUST_EXIST);
@@ -70,7 +78,14 @@ class element extends \mod_customcert\element {
      * @return string the html
      */
     public function render_html() {
-        $code = \mod_customcert\certificate::generate_code();
+        if (get_config('customcert', 'sequential_code')) {
+            $code = get_config('customcert', 'sequence_start');
+            if (empty($code)) {
+                $code = '[Unconfigured Sequence]';
+            }
+        } else {
+            $code = \mod_customcert\certificate::generate_code();
+        }
 
         return \mod_customcert\element_helper::render_html_content($this, $code);
     }

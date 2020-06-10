@@ -293,7 +293,12 @@ class mod_customcert_privacy_provider_testcase extends \core_privacy\tests\provi
         $customcertissue = new stdClass();
         $customcertissue->customcertid = $customcertid;
         $customcertissue->userid = $userid;
-        $customcertissue->code = \mod_customcert\certificate::generate_code();
+        if (get_config('customcert', 'sequential_code')) {
+            $customcertissue->code = \mod_customcert\certificate::generate_sequential_code($userid, $customcertid);
+        } else {
+            $customcertissue->code = \mod_customcert\certificate::generate_code();
+        }
+        
         $customcertissue->timecreated = time() + $i;
 
         // Insert the record into the database.
