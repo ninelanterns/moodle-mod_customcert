@@ -54,7 +54,7 @@ define('CUSTOMCERT_DATE_COURSE_END', '-4');
 /**
  * Date - Seminar end
  */
-define('CUSTOMCERT_DATE_SEMINAR_END', '-5');
+define('CUSTOMCERT_DATE_SEMINAR', '-5');
 
 require_once($CFG->dirroot . '/lib/grade/constants.php');
 
@@ -82,7 +82,7 @@ class element extends \mod_customcert\element {
         $dateoptions[CUSTOMCERT_DATE_COURSE_START] = get_string('coursestartdate', 'customcertelement_date');
         $dateoptions[CUSTOMCERT_DATE_COURSE_END] = get_string('courseenddate', 'customcertelement_date');
         $dateoptions[CUSTOMCERT_DATE_COURSE_GRADE] = get_string('coursegradedate', 'customcertelement_date');
-        $dateoptions[CUSTOMCERT_DATE_SEMINAR_END] = get_string('seminarenddate', 'customcertelement_date');
+        $dateoptions[CUSTOMCERT_DATE_SEMINAR] = get_string('seminardate', 'customcertelement_date');
         $dateoptions = $dateoptions + \mod_customcert\element_helper::get_grade_items($COURSE);
 
         $mform->addElement('select', 'dateitem', get_string('dateitem', 'customcertelement_date'), $dateoptions);
@@ -164,9 +164,9 @@ class element extends \mod_customcert\element {
                 $date = $DB->get_field('course', 'startdate', array('id' => $courseid));
             } else if ($dateitem == CUSTOMCERT_DATE_COURSE_END) {
                 $date = $DB->get_field('course', 'enddate', array('id' => $courseid));
-            } else if ($dateitem == CUSTOMCERT_DATE_SEMINAR_END) { //ICAHAS-160
-                $sql = "SELECT dates.timestart AS timestart,
-                               dates.timefinish AS timefinish,
+            } else if ($dateitem == CUSTOMCERT_DATE_SEMINAR) { //ICAHAS-160
+                $sql = "SELECT MIN(dates.timestart) AS timestart,
+                               MAX(dates.timefinish) AS timefinish,
                                session.id AS sessionid
                           FROM {facetoface} seminar
                           JOIN {facetoface_sessions} session
@@ -180,19 +180,24 @@ class element extends \mod_customcert\element {
                          WHERE seminar.course = :courseid
                            AND signup.userid = :userid
                            AND status.statuscode = :fullyattendedstatus
-                      ORDER BY dates.timefinish DESC
-                               LIMIT 1";
-                $result = $DB->get_record_sql($sql, array('courseid' => $courseid, 'userid' => $user->id, 'fullyattendedstatus' => MDL_F2F_STATUS_FULLY_ATTENDED));
-                if (!empty($result)) {
-                    if (userdate($result->timestart, '%y%m%d') === userdate($result->timefinish, '%y%m%d')) {
-                        $date = $result->timefinish;
-                    } else {
-                        $multiday = true;
-                        $date = $this->get_date_format_string($result->timestart, $dateformat) . ' - ' . $this->get_date_format_string($result->timefinish, $dateformat);
-                    }
-                } else {
-                    $date = 0;
-                }
+                      GROUP BY session.id";
+
+                $results = $DB->get_records_sql($sql, array('courseid' => $courseid, 'userid' => $user->id, 'fullyattendedstatus' => MDL_F2F_STATUS_FULLY_ATTENDED));
+
+	            if (!empty($results)) {
+	            	$date = '';
+	            	$num_of_dates = count($results);
+		            foreach ($results as $result) {
+			            if (userdate($result->timestart, '%y%m%d') === userdate($result->timefinish, '%y%m%d')) {
+				            $date .= $result->timestart . ($num_of_dates > 1 ? '<br/>' : '' );
+			            } else {
+				            $multiday = true;
+				            $date .= $this->get_date_format_string($result->timestart, $dateformat) . ' & ' . $this->get_date_format_string($result->timefinish, $dateformat)  . ($num_of_dates > 1 ? '<br/>' : '' );;
+			            }
+		            }
+	            } else {
+		            $date = 0;
+	            }
             } else {
                 if ($dateitem == CUSTOMCERT_DATE_COURSE_GRADE) {
                     $grade = \mod_customcert\element_helper::get_course_grade_info(
