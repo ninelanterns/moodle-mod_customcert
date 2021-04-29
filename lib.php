@@ -268,6 +268,8 @@ function customcert_supports($feature) {
             return true;
         case FEATURE_BACKUP_MOODLE2:
             return true;
+        case FEATURE_ARCHIVE_COMPLETION:
+            return true;
         default:
             return null;
     }
@@ -420,4 +422,16 @@ function mod_customcert_get_fontawesome_icon_map() {
     return [
         'mod_customcert:download' => 'fa-download'
     ];
+}
+
+function customcert_archive_completion($userid, $courseid, $windowopens = NULL) {
+    global $CFG, $DB;
+
+    $mods = $DB->get_records('customcert', array('course' => $courseid));
+
+    foreach ($mods as $mod) {
+        $DB->execute('DELETE FROM {customcert_issues} WHERE userid = :userid AND customcertid = :modid', array('userid' => $userid, 'modid' => $mod->id));
+    }
+
+    return true;
 }
