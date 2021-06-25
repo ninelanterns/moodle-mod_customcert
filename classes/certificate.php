@@ -252,7 +252,7 @@ class certificate {
         list($conditionssql, $conditionsparams) = self::get_conditional_issues_sql($cm, $groupmode);
 
         // If it is empty then return an empty array.
-        if (empty($conditionsparams)) {
+        if (empty($conditionssql)) {
             return array();
         }
 
@@ -293,7 +293,7 @@ class certificate {
         list($conditionssql, $conditionsparams) = self::get_conditional_issues_sql($cm, $groupmode);
 
         // If it is empty then return 0.
-        if (empty($conditionsparams)) {
+        if (empty($conditionssql)) {
             return 0;
         }
 
