@@ -253,7 +253,8 @@ class certificate {
 
         // If it is empty then return an empty array.
         if (empty($conditionssql)) {
-            return array();
+            // BUGFIX FOR MYOHAS-88
+            //return array();
         }
 
         // Add the conditional SQL and the customcertid to form all used parameters.
